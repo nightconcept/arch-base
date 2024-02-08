@@ -30,13 +30,13 @@ This playbook does the following:
 
 - Only runs on systems booted from the Archlinux ISO.
 - Detects the firmware type and creates disk partitions accordingly. 
-    - Encrypts the main partition with LUKS.
-    - Creates an LVM volume group with two logical volumes, one for `/` and one for `/home`.
-    - Enables TRIM support if supported by the disk.
+  - Encrypts the main partition with LUKS.
+  - Creates an LVM volume group with two logical volumes, one for `/` and one for `/home`.
+  - Enables TRIM support if supported by the disk.
 - Installs only basic packages plus a few required to run the `arch-setup` playbook later on.
 - Does not configure the system, configuration is done on the `arch-setup` playbook.
 - Creates the user account giving it sudo privileges.
-    - Stores the encryption key in a file called `.vault_key` in the user's home directory.
+  - Stores the encryption key in a file called `.vault_key` in the user's home directory.
 - Enables or disables the root account, as instructed.
 - Enables SWAP, as instructed.
 
@@ -45,74 +45,85 @@ This playbook does the following:
 
 1. On the **managed node** (where you want to install Archlinux):
 
-   - Boot from the [installation image](https://archlinux.org/download/).
+  - Boot from the [installation image](https://archlinux.org/download/).
    
-   - Change the password of the root user:
+  - Change the password of the root user:
    
-     ```bash
-     # Use a simple password, its only temporary.
-     passwd
-     ```
+    ```bash
+    # Use a simple password, its only temporary.
+    passwd
+    ```
    
    - Annotate the IP address:
    
-     ```bash
-     # Use `iwctl` if you need to connect to a wireless network.
-     ip a
-     ```
+    ```bash
+    # Use `iwctl` if you need to connect to a wireless network.
+    ip a
+    ```
    
 2. On the **controller node**:
 
-   - Clone this repository:
+  - Ansible 2.11+ is required. Run the following commands (`apt` commands are shown)
+  - 
+    ```bash
+    sudo apt remove ansible
+    sudo apt --purge autoremove
+    sudo apt update
+    sudo apt upgrade
+    sudo apt -y install software-properties-common
+    sudo apt-add-repository ppa:ansible/ansible
+    sudo apt install ansible
+    ``` 
+
+  - Clone this repository:
    
-     ```bash
-     git clone https://github.com/nightconcept/arch-base.git
-     ``` 
+    ```bash
+    git clone https://github.com/nightconcept/arch-base.git
+    ``` 
    
-   - Review the `hosts.ini` file --- make sure the hostname you intend to assign to the managed node is listed there.
-   
-   - Make sure there is a file matching that hostname in `host_vars/{HOSTNAME}.yml` --- the variable `ansible_host` must be pointing to the correct IP address (the one you just checked).
+  - Review the `hosts.ini` file --- make sure the hostname you intend to assign to the managed node is listed there.
+  
+  - Make sure there is a file matching that hostname in `host_vars/{HOSTNAME}.yml` --- the variable `ansible_host` must be pointing to the correct IP address (the one you just checked).
 
-   - Read the `group_vars/all.yml` file, you may need to overwrite one or more of the default variables, pay special attention to the following variables: 
+  - Read the `group_vars/all.yml` file, you may need to overwrite one or more of the default variables, pay special attention to the following variables: 
 
-     - `target_disk` --- use `fdisk -l` on the managed node to identify the [block device name](https://wiki.archlinux.org/title/Device_file#Block_devices).
+    - `target_disk` --- use `fdisk -l` on the managed node to identify the [block device name](https://wiki.archlinux.org/title/Device_file#Block_devices).
 
-     - `password` --- is the password for the user account (see below how to encrypt a variable value).
+    - `password` --- is the password for the user account (see below how to encrypt a variable value).
 
-     - `encryption_password` --- is the password used to encrypt the disk, make sure it is long and random.
+    - `encryption_password` --- is the password used to encrypt the disk, make sure it is long and random.
 
-   - Run the script:
+  - Run the script:
 
-     Change directory into the cloned repository and run:
+    Change directory into the cloned repository and run:
 
-     ```bash
-     ansible-playbook --extra-vars "username={USERNAME}" --vault-password-file ~/.vault_key --ask-pass local.yml
-     ```
+    ```bash
+    ansible-playbook --extra-vars "username={USERNAME}" --vault-password-file ~/.vault_key --ask-pass local.yml
+    ```
 
-     > If you get any weird errors related to previous state of the target installation disk try completely removing the disk data with `dd if=/dev/zero of={{ /dev/sdX }} bs=4M status=progress`.
+    > If you get any weird errors related to previous state of the target installation disk try completely removing the disk data with `dd if=/dev/zero of={{ /dev/sdX }} bs=4M status=progress`.
 
-     You will be prompted for the root password of the managed node (the one you changed recently). If no errors occur the managed node will shutdown automatically after a successful installation.
+    You will be prompted for the root password of the managed node (the one you changed recently). If no errors occur the managed node will shutdown automatically after a successful installation.
 
-     Remove install media and turn it back on.
+    Remove install media and turn it back on.
 
-     Use the `nmtui` command to connect to a wireless network.
+    Use the `nmtui` command to connect to a wireless network.
 
 
 ## How to encrypt a variable value with Ansible
 
 First store the encryption password in a file to avoid any typos:
 
-   ```bash
-   echo "{encryption-password-here}" > ~/.vault_key; chmod 600 ~/.vault_key
-   ```
+  ```bash
+  echo "{encryption-password-here}" > ~/.vault_key; chmod 600 ~/.vault_key
+  ```
 
 Encrypt the variable value:
 
-   ```bash
-   ansible-vault encrypt_string '{PASSWORD_TO_ENCRYPT}' --vault-password-file ~/.vault_key --name 'password'
-   ansible-vault encrypt_string '{LONG_RANDOM_STRING_TO_ENCRYPT}' --vault-password-file ~/.vault_key --name 'encryption_password'
-   ```
+  ```bash
+  ansible-vault encrypt_string '{PASSWORD_TO_ENCRYPT}' --vault-password-file ~/.vault_key --name 'password'
+  ansible-vault encrypt_string '{LONG_RANDOM_STRING_TO_ENCRYPT}' --vault-password-file ~/.vault_key --name 'encryption_password'
+  ```
 
 Copy the encrypted output and paste it in `/group_vars/all.yml` or in the corresponding `host_vars/{HOSTNAME}.yml`.
-
 
