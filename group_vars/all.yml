@@ -1,0 +1,91 @@
+# --- Notes --------------------------------------------------------------------
+
+#     The `username` variable must be passed as a command-line argument,
+#     see README.
+
+
+# --- Encrypted variables ------------------------------------------------------
+#
+#     See README for instructions to encrypt values in Ansible.
+#
+#     Change them here to apply to all hosts or in the corresponding
+#     `host_vars/{HOSTNAME}.yml` file.
+
+#     User password:
+password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          37303564383330613932366666333132656331303964353733633138383461343138306265653538
+          3334383832343335393464623961373137306533323862350a643361666136316432663264363532
+          36353039626566636238366335616633623633353039666363636339626639643764643035643539
+          3239373138323232340a663462326138393766653837373235373934653362633263616565663033
+          3330
+
+#     Encryption password - will be used:
+#       - To encrypt the local disk.
+
+#       - To encrypt/decrypt variables of the second script.
+encryption_password: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          37626137373239316634386232653666393631396336626639643636333430663165323132373231
+          6237343533343332376238323930626639633036646638360a376134636663623738396566386562
+          62323762613630323839386539323132353830646334303635333861663863363865383539656236
+          6135383337636530660a323131626632343736323734663663633731376131623632663138326566
+          63663531316166396335623832623233613033303034663134656464653466363433306130616231
+          39633965363032366662376262366164613666393131643335303464363632313039366465316538
+          623536376434373333333838353431633737
+
+
+# --- Hosts-default variables --------------------------------------------------
+
+#     Important! 
+#     Do not edit these variables here, overwrite them in the corresponding 
+#     `host_vars/{HOSTNAME}.yml` file.
+
+#     Will be different for nvme disks, use `lsblk -f` to identify the disk.
+installation_block_device_name: /dev/sda
+
+#     Size for the system logical volume, user files will be stored on another 
+#     logical volume (remainder space).
+space_for_system_files_in_gb: 32
+
+#     Use 0 for no swap or a multiple of 1024.
+swap_size_in_mb: 4096
+
+#     If set to `false` the encryption password will be used as the root password.
+disable_root_login: true
+
+#     https://wiki.archlinux.org/title/Linux_console/Keyboard_configuration
+# console_keymap: us
+
+#     Default timezone.
+# timezone: 'America/Guayaquil'
+
+#     The first one will be the default.
+# locales:                                    
+#   - en_US
+#   - es_EC
+
+
+# --- Playbook variables -------------------------------------------------------
+
+#     No need to change!
+
+#     Just to make sure you don't break the playbook in case you decide to 
+#     change the names
+
+luks_device_name: crypt
+lvm_vg_name: lvm
+
+
+
+# --- Anible configurations ----------------------------------------------------
+
+#     Do not change!
+
+#     Avoid checking the `~/.ssh/known_hosts` file because everytime I boot the
+#     managed node from the Live Environment it changes. Tried to use
+#     `host_key_checking = False` in the `ansible.cfg` file but it still gives
+#     me an error when there is already an entry for the given host.
+ansible_ssh_common_args: -o "StrictHostKeyChecking no" -o "UserKnownHostsFile /dev/null"
+
+
